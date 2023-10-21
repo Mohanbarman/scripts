@@ -1,0 +1,38 @@
+#!/bin/bash
+
+project=$(gcloud projects list | fzf --header-lines=1 | awk '{ print $1 }')
+if [ -z "${project}" ]; then
+  exit 1
+fi
+
+vm_instance=($(gcloud compute instances list --project "$project" | fzf --header-lines=1 | awk '{print $1" "$2" "$NF}'))
+if [ -z "${vm_instance}" ]; then
+  exit 1
+fi
+
+if [ "${vm_instance[2]}" == "TERMINATED" ]; then
+  read -p 'vm is stopped state do you want to start it ? [y/N]: ' start_vm
+  if [ "$start_vm" == "y" ]; then
+    echo gcloud compute instances start ${vm_instance[0]} --project $project --zone ${vm_instance[1]}
+    gcloud compute instances start ${vm_instance[0]} --project $project --zone ${vm_instance[1]}
+    echo waiting 30sec for services to start...
+    sleep 15
+  else
+    exit 1
+  fi
+fi
+
+echo gcloud compute ssh --zone "${vm_instance[1]}" "${vm_instance[0]}" --project $project --tunnel-through-iap
+gcloud compute ssh --zone "${vm_instance[1]}" "${vm_instance[0]}" --project $project --tunnel-through-iap
+
+if [ $? -ne 0 ]; then
+  exit $?
+fi
+
+if [ "${vm_instance[2]}" == "TERMINATED" ]; then
+  read -p 'vm was in stopped state, do you want to stop the vm ? [y/N]' stop_vm
+  if [ "$stop_vm" == "y" ]; then
+    echo gcloud compute instances stop ${vm_instance[0]} --project $project --zone ${vm_instance[1]}
+    gcloud compute instances stop ${vm_instance[0]} --project $project --zone ${vm_instance[1]}
+  fi
+fi

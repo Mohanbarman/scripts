@@ -1,0 +1,15 @@
+#!/bin/bash
+
+project_name=${PWD##*/}
+wt_path="../$project_name""-wt""/$1"
+
+git worktree add $wt_path $1
+
+if [ -f "package.json" ]; then
+  ln -s $PWD/"node_modules" $wt_path
+  ln -s $PWD/"private" $wt_path
+  ln -s $PWD/"dbip-location.mmdb" $wt_path
+fi
+
+echo worktree created at $wt_path
+
