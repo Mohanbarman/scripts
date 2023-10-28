@@ -4,6 +4,9 @@ project_name=${PWD##*/}
 wt_path="../$project_name""-wt""/$1"
 
 git worktree add $wt_path $1
+if [ $? -ne 0 ]; then
+  exit $?
+fi
 
 if [ -f "package.json" ]; then
   ln -s $PWD/"node_modules" $wt_path
@@ -12,4 +15,12 @@ if [ -f "package.json" ]; then
 fi
 
 echo worktree created at $wt_path
+
+## switch to worktree in a new tmux session
+cd $wt_path
+tmux new -s $1 -d
+if [ $? -ne 0 ]; then
+  exit $?
+fi
+tmux switch -t $1
 
